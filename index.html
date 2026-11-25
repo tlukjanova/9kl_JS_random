@@ -41,6 +41,9 @@ pre{overflow-x:auto;background:var(--code);border-radius:10px;padding:12px 14px;
 .kw{color:var(--kw)}.fn{color:var(--fn)}.nu{color:var(--acc)}.cm{color:var(--mute)}
 .ans{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font:600 22px "JetBrains Mono",monospace}
 .ans .x{font-size:17px;margin-right:6px}
+.tag{display:inline-block;font-size:13px;font-weight:500;padding:2px 10px;border-radius:999px;margin-left:8px;vertical-align:2px;background:var(--code);color:var(--mute)}
+.tag.cl{background:var(--accS);color:var(--acc)}
+.rule p{margin:0}.rule p+p{margin-top:6px}
 .ans input{width:96px;text-align:center}
 .q.ok{border-color:var(--ok);background:var(--okS)}.q.no{border-color:var(--bad);background:var(--badS)}
 .q.empty{border-color:var(--acc);border-style:dashed}
@@ -89,7 +92,11 @@ tfoot td{font-weight:700;border-bottom:0}
   </svg>
 </header>
 
-<div class="rule">Atbildi raksti formā <b>X ∈ [min; max)</b> – kreisais gals <b>ir</b> ieskaitīts, labais gals <b>nav</b> ieskaitīts. Piemēram, <b>Math.floor(Math.random() * 10 + 1)</b> → <b>[1; 11)</b>.</div>
+<div class="rule">
+  <p>Ievēro, kāda iekava ir jautājumā. Kreisais gals <b>[</b> vienmēr ir ieskaitīts.</p>
+  <p><b>[min; max)</b> – labais gals <b>nav</b> ieskaitīts. <b>[min; max]</b> – labais gals <b>ir</b> ieskaitīts.</p>
+  <p>Veseliem skaitļiem <b>[1; 11)</b> ir tas pats, kas <b>[1; 10]</b>. Piemēram, <b>Math.floor(Math.random() * 10 + 1)</b> → <b>[1; 11)</b> jeb <b>[1; 10]</b>.</p>
+</div>
 
 <div class="who">
   <div><label for="name">Vārds un uzvārds <span>*</span></label><input id="name" autocomplete="name" required></div>
@@ -165,6 +172,9 @@ const T=[
 ];
 // TEMPLATES END
 
+// jautājumi (0 = 1. jautājums), kuros atbilde jāraksta ar ] – labais gals ieskaitīts; tikai veseliem skaitļiem
+const CLOSED=[3,5,6,8,9];
+
 // īss uzdevuma apraksts tabulai un e-pastam: kods vienā rindā
 const short=code=>code.replace(/function kaulins\(\) \{\s*return ([^;]+);\s*\}\s*let X = kaulins\(\);/,'X = $1')
   .replace(/let /g,'').replace(/\s*\n\s*/g,' ').replace(/;$/,'');
@@ -174,11 +184,12 @@ const $=id=>document.getElementById(id);
 const list=$('list'),msg=$('msg');
 
 function build(){
-  qs=T.map(f=>f());res=[];warned=false;report=null;
+  qs=T.map((f,i)=>{const q=f();q.closed=CLOSED.includes(i);q.hi=q.closed?q.b-1:q.b;q.br=q.closed?']':')';
+    if(q.closed)q.why+=` Veseliem skaitļiem [${q.a}; ${q.b}) = [${q.a}; ${q.b-1}], jo lielākais iespējamais skaitlis ir ${q.b-1}.`;return q});res=[];warned=false;report=null;
   list.innerHTML=qs.map((q,i)=>`<li class="q" id="q${i}">
-    <h2>No kāda intervāla būs X?</h2>
+    <h2>No kāda intervāla būs X?<span class="tag${q.closed?' cl':''}">${q.closed?'[min; max] – labais gals ieskaitīts':'[min; max) – labais gals neieskaitīts'}</span></h2>
     <pre><code>${hl(q.code)}</code></pre>
-    <div class="ans"><span class="x">X ∈</span>[<input id="a${i}" inputmode="decimal" autocomplete="off" aria-label="${i+1}. jautājums: kreisais gals (min)">;<input id="b${i}" inputmode="decimal" autocomplete="off" aria-label="${i+1}. jautājums: labais gals (max)">)</div>
+    <div class="ans"><span class="x">X ∈</span>[<input id="a${i}" inputmode="decimal" autocomplete="off" aria-label="${i+1}. jautājums: kreisais gals (min)">;<input id="b${i}" inputmode="decimal" autocomplete="off" aria-label="${i+1}. jautājums: labais gals (max)">${q.br}</div>
     <div class="fb" id="f${i}"></div></li>`).join('');
   $('res').style.display='none';$('sum').style.display='none';$('fall').style.display='none';
   msg.textContent='';$('submit').disabled=false;
@@ -186,7 +197,7 @@ function build(){
 
 const num=v=>{v=v.trim().replace(',','.').replace('−','-').replace('–','-');return v===''||isNaN(+v)?null:+v};
 const fmt=v=>v===null?'?':String(v);
-const ansText=r=>r.x===null&&r.y===null?'nav atbildes':`[${fmt(r.x)}; ${fmt(r.y)})`;
+const ansText=(r,br)=>r.x===null&&r.y===null?'nav atbildes':`[${fmt(r.x)}; ${fmt(r.y)}${br}`;
 
 function submit(){
   const nameEl=$('name'),clsEl=$('cls');
@@ -208,11 +219,11 @@ function submit(){
   $('submit').disabled=true;
   let score=0;
   res=qs.map((q,i)=>{
-    const v=vals[i],ok=v.x===q.a&&v.y===q.b;if(ok)score++;
+    const v=vals[i],ok=v.x===q.a&&v.y===q.hi;if(ok)score++;
     const li=$('q'+i);li.className='q '+(ok?'ok':'no');
-    $('f'+i).innerHTML=`<span class="st">${ok?'Pareizi!':'Nepareizi.'}</span> Tava atbilde: <b>${esc(ansText(v))}</b>. Pareizā atbilde: <b>[${q.a}; ${q.b})</b>.<br>${esc(q.why)}`;
+    $('f'+i).innerHTML=`<span class="st">${ok?'Pareizi!':'Nepareizi.'}</span> Tava atbilde: <b>${esc(ansText(v,q.br))}</b>. Pareizā atbilde: <b>[${q.a}; ${q.hi}${q.br}</b>.<br>${esc(q.why)}`;
     li.querySelectorAll('input').forEach(n=>n.readOnly=true);
-    return{desc:short(q.code),right:`[${q.a}; ${q.b})`,ans:ansText(v),pts:ok?1:0};
+    return{desc:short(q.code),right:`[${q.a}; ${q.hi}${q.br}`,ans:ansText(v,q.br),pts:ok?1:0};
   });
   const max=qs.length,pct=Math.round(score/max*100);
   const d=new Date(),p=n=>String(n).padStart(2,'0');
