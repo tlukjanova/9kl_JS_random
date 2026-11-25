@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tests: gadījuma skaitļi ar Math.random()</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light dark;
+--bg:#ffffff;--ink:#16181d;--mute:#5c6270;--card:#f5f6f8;--line:#dfe2e8;--code:#eef0f4;
+--acc:#d62839;--accS:#fde8ea;--ok:#1d7a46;--okS:#e3f5ea;--bad:#c0262f;--badS:#fde6e7;
+--kw:#8a2be2;--fn:#0b62a8;--track:rgba(255,255,255,.25)}
+@media (prefers-color-scheme:dark){:root{
+--bg:#141518;--ink:#eceef2;--mute:#a3a9b6;--card:#1d1f24;--line:#2e3138;--code:#25282f;
+--accS:#3a1a1e;--ok:#5fd08f;--okS:#163222;--bad:#ff7b82;--badS:#3a191b;
+--kw:#c99bff;--fn:#7cc0ff;--track:rgba(0,0,0,.25)}}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Rubik,system-ui,sans-serif;overflow-x:hidden}
+.wrap{max-width:780px;margin:0 auto;padding:clamp(20px,4vw,48px) max(4vw,16px) 64px}
+header{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;align-items:center;margin-bottom:24px}
+h1{font-size:clamp(30px,5vw,44px);line-height:1.05;margin:0 0 8px;text-wrap:balance}
+h1 code{color:var(--acc);font-family:"JetBrains Mono",monospace;font-size:.82em}
+.lead{margin:0;color:var(--mute);max-width:60ch}
+.die{width:88px;height:88px}
+.rule{background:var(--accS);border-radius:14px;padding:14px 18px;margin:0 0 24px}
+.rule b{font-family:"JetBrains Mono",monospace}
+.who{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:14px;margin-bottom:24px}
+.who label{display:block;font-weight:500;margin-bottom:4px}
+.who label span{color:var(--acc)}
+input{font:16px "JetBrains Mono",monospace;color:var(--ink);background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px}
+input:focus-visible,button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.who input{font-family:Rubik,sans-serif;width:100%}
+input.miss{border-color:var(--bad);background:var(--badS)}
+ol{list-style:none;padding:0;margin:0;display:grid;gap:16px;counter-reset:q}
+.q{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;counter-increment:q}
+.q h2{font-size:17px;font-weight:500;margin:0 0 10px}
+.q h2::before{content:counter(q) ". ";color:var(--acc);font-weight:700}
+pre{overflow-x:auto;background:var(--code);border-radius:10px;padding:12px 14px;margin:0 0 14px;font:15px/1.6 "JetBrains Mono",monospace}
+.kw{color:var(--kw)}.fn{color:var(--fn)}.nu{color:var(--acc)}.cm{color:var(--mute)}
+.ans{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font:600 22px "JetBrains Mono",monospace}
+.ans .x{font-size:17px;margin-right:6px}
+.ans input{width:96px;text-align:center}
+.q.ok{border-color:var(--ok);background:var(--okS)}.q.no{border-color:var(--bad);background:var(--badS)}
+.q.empty{border-color:var(--acc);border-style:dashed}
+.fb{margin-top:12px;font-size:15px}.fb:empty{display:none}.fb b{font-family:"JetBrains Mono",monospace}
+.fb .st{font-weight:700}.q.ok .st{color:var(--ok)}.q.no .st{color:var(--bad)}
+.bar{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px}
+button{font:500 16px Rubik,sans-serif;min-height:48px;padding:0 22px;border-radius:12px;border:2px solid var(--acc);cursor:pointer;background:var(--acc);color:#fff}
+button.sec{background:transparent;color:var(--acc)}
+button:disabled{opacity:.5;cursor:default}
+.msg{color:var(--bad);margin-top:12px;min-height:1.4em}
+#res{display:none;margin-top:28px;border-radius:18px;padding:22px 24px;background:var(--ink);color:var(--bg)}
+#res h2{margin:0 0 4px;font-size:clamp(26px,4vw,36px);line-height:1.1}
+#res p{margin:0}
+.score{font:700 clamp(44px,8vw,64px)/1 "JetBrains Mono",monospace;color:var(--acc);margin:6px 0 8px}
+.score small{font-size:.45em;margin-left:10px}
+.meter{height:12px;border-radius:6px;background:var(--track);margin:12px 0 4px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--acc);width:0;transition:width .8s}
+.send{margin-top:16px;padding:12px 14px;border-radius:12px;background:var(--track);font-weight:500}
+.send.ok{color:#5fd08f}.send.err{color:#ff9aa0}
+.fall{display:none;flex-wrap:wrap;gap:10px;margin-top:12px}
+.fall button{background:var(--bg);color:var(--ink);border-color:var(--bg)}
+#sum{display:none;margin-top:28px}
+#sum h2{font-size:22px;margin:0 0 10px}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:500;color:var(--mute)}
+td.c{font-family:"JetBrains Mono",monospace;font-size:14px}
+td.n,th.n{text-align:right;white-space:nowrap}
+tfoot td{font-weight:700;border-bottom:0}
+@media (prefers-reduced-motion:reduce){.meter i{transition:none}}
+@media (max-width:600px){header{grid-template-columns:1fr}.die{display:none}.ans input{width:80px}.who{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>Tests: gadījuma skaitļi ar <code>Math.random()</code></h1>
+    <p class="lead">9. klase · 10 jautājumi. Izlasi kodu un ieraksti, no kāda intervāla būs iegūtais skaitlis X.</p>
+  </div>
+  <svg class="die" viewBox="0 0 88 88" aria-hidden="true">
+    <rect x="8" y="12" width="70" height="70" rx="16" fill="#9e1b2a"/>
+    <rect x="6" y="6" width="70" height="70" rx="16" fill="#d62839"/>
+    <g fill="#fff"><circle cx="24" cy="24" r="6"/><circle cx="58" cy="24" r="6"/><circle cx="41" cy="41" r="6"/><circle cx="24" cy="58" r="6"/><circle cx="58" cy="58" r="6"/></g>
+  </svg>
+</header>
+
+<div class="rule">Atbildi raksti formā <b>X ∈ [min; max)</b> – kreisais gals <b>ir</b> ieskaitīts, labais gals <b>nav</b> ieskaitīts. Piemēram, <b>Math.floor(Math.random() * 10 + 1)</b> → <b>[1; 11)</b>.</div>
+
+<div class="who">
+  <div><label for="name">Vārds un uzvārds <span>*</span></label><input id="name" autocomplete="name" required></div>
+  <div><label for="cls">Klase <span>*</span></label><input id="cls" placeholder="piem., 9.a" required></div>
+</div>
+
+<ol id="list"></ol>
+
+<div class="bar">
+  <button id="submit">Iesniegt testu</button>
+  <button id="again" class="sec">Pildīt vēlreiz</button>
+</div>
+<div class="msg" id="msg" role="status"></div>
+
+<section id="res" aria-live="polite">
+  <h2 id="resTitle">Rezultāts</h2>
+  <div class="score" id="score"></div>
+  <div class="meter"><i id="meter"></i></div>
+  <p id="grade"></p>
+  <div class="send" id="send"></div>
+  <div class="fall" id="fall">
+    <button id="gmail">Sūtīt ar Gmail</button>
+    <button id="mailto">Cita e-pasta programma</button>
+    <button id="copy">Kopēt rezultātu</button>
+  </div>
+</section>
+
+<section id="sum">
+  <h2>Kopsavilkums</h2>
+  <div class="scroll"><table>
+    <thead><tr><th class="n">Nr.</th><th>Uzdevums</th><th>Pareizā atbilde</th><th class="n">Punkti</th></tr></thead>
+    <tbody id="sumBody"></tbody>
+    <tfoot><tr><td></td><td>Kopā</td><td></td><td class="n" id="sumTotal"></td></tr></tfoot>
+  </table></div>
+</section>
+</div>
+
+<script>
+{
+const TEST_TITLE='Tests: gadījuma skaitļi ar Math.random()';
+const EMAIL='tlukjanova78@gmail.com';
+
+const R=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const hl=src=>esc(src)
+  .replace(/(\/\/[^\n]*)/g,'<span class="cm">$1</span>')
+  .replace(/\b(let|const|function|return)\b/g,'<span class="kw">$1</span>')
+  .replace(/\b(Math\.random|Math\.floor)\b/g,'<span class="fn">$1</span>')
+  .replace(/(^|[^\w#])(\d+)(?![\w"])/g,'$1<span class="nu">$2</span>');
+
+// TEMPLATES START
+const T=[
+ ()=>({code:'let X = Math.random();',a:0,b:1,real:true,
+   why:'Math.random() dod reālu skaitli no 0 (ieskaitot) līdz 1 (neieskaitot).'}),
+ ()=>{const a=R(2,9);return{code:`let X = Math.random() * ${a};`,a:0,b:a,real:true,
+   why:`Reizinot ar ${a}, intervāls izstiepjas: [0·${a}; 1·${a}) = [0; ${a}). Skaitļi ir decimāldaļas.`}},
+ ()=>{const a=R(2,6),b=R(1,9);return{code:`let X = Math.random() * ${a} + ${b};`,a:b,b:a+b,real:true,
+   why:`Math.random() * ${a} dod [0; ${a}), pieskaitot ${b}, abi gali pabīdās: [${b}; ${a+b}).`}},
+ ()=>{const a=R(5,20);return{code:`let X = Math.floor(Math.random() * ${a});`,a:0,b:a,
+   why:`Veseli skaitļi no [0; ${a}), t.i., no 0 līdz ${a-1} ieskaitot.`}},
+ ()=>{const a=R(4,15),b=R(2,12);return{code:`let X = Math.floor(Math.random() * ${a} + ${b});`,a:b,b:a+b,
+   why:`Formula [b; a+b): [${b}; ${a}+${b}) = [${b}; ${a+b}). Lielākais iespējamais skaitlis ir ${a+b-1}.`}},
+ ()=>{const a=R(5,12),b=R(3,20);return{code:`let X = Math.floor(Math.random() * ${a}) + ${b};`,a:b,b:a+b,
+   why:`Vispirms Math.floor(...) dod [0; ${a}), tad pieskaita ${b}: [${b}; ${a+b}). Rezultāts tāds pats kā ar + ${b} iekavās.`}},
+ ()=>{const a=R(12,21),b=R(3,10);return{code:`let X = Math.floor(Math.random() * ${a} - ${b});`,a:-b,b:a-b,
+   why:`Atņemot ${b}, intervāls pabīdās pa kreisi: [0 − ${b}; ${a} − ${b}) = [${-b}; ${a-b}).`}},
+ ()=>{const mn=R(1,10),mx=mn+R(5,30);return{code:`let min = ${mn};\nlet max = ${mx};\nlet X = Math.floor(Math.random() * (max - min) + min);`,a:mn,b:mx,
+   why:`Šī ir vispārīgā formula: X ∈ [min; max) = [${mn}; ${mx}). Iekavās (max − min) = ${mx-mn}.`}},
+ ()=>{const a=R(6,10),b=R(1,5),c=R(10,50);return{code:`let X = Math.floor(Math.random() * ${a} + ${b});\nX = X + ${c};`,a:b+c,b:a+b+c,
+   why:`Pirmā rinda dod [${b}; ${a+b}). Otrā rinda pieskaita ${c}: [${b+c}; ${a+b+c}).`}},
+ ()=>{const a=R(3,9),b=R(1,6);return{code:`function kaulins() {\n  return Math.floor(Math.random() * (${a} + 1)) + ${b};\n}\nlet X = kaulins();`,a:b,b:a+1+b,
+   why:`Uzmanies ar iekavām: (${a} + 1) = ${a+1}. Tātad [${b}; ${a+1}+${b}) = [${b}; ${a+1+b}).`}}
+];
+// TEMPLATES END
+
+// īss uzdevuma apraksts tabulai un e-pastam: kods vienā rindā
+const short=code=>code.replace(/function kaulins\(\) \{\s*return ([^;]+);\s*\}\s*let X = kaulins\(\);/,'X = $1')
+  .replace(/let /g,'').replace(/\s*\n\s*/g,' ').replace(/;$/,'');
+
+let qs=[],res=[],warned=false,report=null;
+const $=id=>document.getElementById(id);
+const list=$('list'),msg=$('msg');
+
+function build(){
+  qs=T.map(f=>f());res=[];warned=false;report=null;
+  list.innerHTML=qs.map((q,i)=>`<li class="q" id="q${i}">
+    <h2>No kāda intervāla būs X?</h2>
+    <pre><code>${hl(q.code)}</code></pre>
+    <div class="ans"><span class="x">X ∈</span>[<input id="a${i}" inputmode="decimal" autocomplete="off" aria-label="${i+1}. jautājums: kreisais gals (min)">;<input id="b${i}" inputmode="decimal" autocomplete="off" aria-label="${i+1}. jautājums: labais gals (max)">)</div>
+    <div class="fb" id="f${i}"></div></li>`).join('');
+  $('res').style.display='none';$('sum').style.display='none';$('fall').style.display='none';
+  msg.textContent='';$('submit').disabled=false;
+}
+
+const num=v=>{v=v.trim().replace(',','.').replace('−','-').replace('–','-');return v===''||isNaN(+v)?null:+v};
+const fmt=v=>v===null?'?':String(v);
+const ansText=r=>r.x===null&&r.y===null?'nav atbildes':`[${fmt(r.x)}; ${fmt(r.y)})`;
+
+function submit(){
+  const nameEl=$('name'),clsEl=$('cls');
+  const name=nameEl.value.trim(),cls=clsEl.value.trim();
+  nameEl.classList.toggle('miss',!name);clsEl.classList.toggle('miss',!cls);
+  if(!name||!cls){
+    msg.textContent='Lūdzu, aizpildi laukus „Vārds un uzvārds” un „Klase”.';
+    (name?clsEl:nameEl).focus();window.scrollTo({top:0,behavior:'smooth'});return;
+  }
+  const vals=qs.map((q,i)=>({x:num($('a'+i).value),y:num($('b'+i).value)}));
+  const emptyIdx=vals.map((v,i)=>v.x===null||v.y===null?i:-1).filter(i=>i>=0);
+  qs.forEach((q,i)=>$('q'+i).classList.toggle('empty',emptyIdx.includes(i)));
+  if(emptyIdx.length&&!warned){
+    warned=true;
+    msg.textContent=`Nav atbildēti jautājumi: ${emptyIdx.map(i=>i+1).join(', ')}. Ja tomēr gribi iesniegt, nospied „Iesniegt testu” vēlreiz.`;
+    return;
+  }
+  msg.textContent='';
+  $('submit').disabled=true;
+  let score=0;
+  res=qs.map((q,i)=>{
+    const v=vals[i],ok=v.x===q.a&&v.y===q.b;if(ok)score++;
+    const li=$('q'+i);li.className='q '+(ok?'ok':'no');
+    $('f'+i).innerHTML=`<span class="st">${ok?'Pareizi!':'Nepareizi.'}</span> Tava atbilde: <b>${esc(ansText(v))}</b>. Pareizā atbilde: <b>[${q.a}; ${q.b})</b>.<br>${esc(q.why)}`;
+    li.querySelectorAll('input').forEach(n=>n.readOnly=true);
+    return{desc:short(q.code),right:`[${q.a}; ${q.b})`,ans:ansText(v),pts:ok?1:0};
+  });
+  const max=qs.length,pct=Math.round(score/max*100);
+  const d=new Date(),p=n=>String(n).padStart(2,'0');
+  const date=`${p(d.getDate())}.${p(d.getMonth()+1)}.${d.getFullYear()}. ${p(d.getHours())}:${p(d.getMinutes())}`;
+  report={name,cls,date,score,max,pct};
+
+  // rezultātu bloks
+  $('resTitle').textContent=`Rezultāts: ${name}, ${cls}`;
+  $('score').innerHTML=`${score} / ${max}<small>${pct}%</small>`;
+  $('grade').textContent=(score===max?'Izcili!':score>=8?'Ļoti labi!':score>=5?'Labi, bet vēl jāpatrenējas.':'Atkārto, kā strādā Math.random() un Math.floor().')+' Pareizās atbildes un skaidrojumi ir redzami pie katra jautājuma.';
+  $('meter').style.width='0';
+  $('res').style.display='block';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{$('meter').style.width=pct+'%'}));
+
+  // kopsavilkuma tabula
+  $('sumBody').innerHTML=res.map((r,i)=>`<tr><td class="n">${i+1}.</td><td class="c">${esc(r.desc)}</td><td class="c">${esc(r.right)}</td><td class="n">${r.pts}/1</td></tr>`).join('');
+  $('sumTotal').textContent=`${score}/${max} (${pct}%)`;
+  $('sum').style.display='block';
+
+  $('res').scrollIntoView({behavior:'smooth',block:'start'});
+  sendMail();
+}
+
+const subject=()=>`${TEST_TITLE}: ${report.name}, ${report.cls} – ${report.score}/${report.max}`;
+function plainText(){
+  return [`${TEST_TITLE}`,`Skolēns: ${report.name}`,`Klase: ${report.cls}`,`Datums: ${report.date}`,
+    `Kopā: ${report.score}/${report.max} (${report.pct}%)`,'',
+    ...res.map((r,i)=>`${i+1}. ${r.desc} — ${r.pts}/1 — atbilde: ${r.ans}`)].join('\n');
+}
+
+async function sendMail(){
+  const st=$('send');st.className='send';st.textContent='Sūta rezultātu skolotājai…';
+  $('fall').style.display='none';
+  const data={_subject:subject(),_template:'table',_captcha:'false',
+    'Vārds un uzvārds':report.name,'Klase':report.cls,'Datums':report.date,
+    'Kopā punkti':`${report.score}/${report.max} (${report.pct}%)`};
+  res.forEach((r,i)=>{data[`${String(i+1).padStart(2,'0')}. uzdevums`]=`${r.desc} | punkti: ${r.pts}/1 | atbilde: ${r.ans}`});
+  try{
+    const ctrl=new AbortController(),t=setTimeout(()=>ctrl.abort(),20000);
+    const r=await fetch(`https://formsubmit.co/ajax/${EMAIL}`,{method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body:JSON.stringify(data),signal:ctrl.signal});
+    clearTimeout(t);
+    const j=await r.json().catch(()=>({}));
+    if(r.ok&&String(j.success)==='true'){st.className='send ok';st.textContent='✓ Rezultāts nosūtīts skolotājai';return}
+    throw new Error(j.message||('HTTP '+r.status));
+  }catch(e){
+    st.className='send err';
+    st.textContent='Automātiski nosūtīt neizdevās. Lūdzu, nosūti rezultātu ar kādu no pogām:';
+    $('fall').style.display='flex';
+  }
+}
+
+$('gmail').addEventListener('click',()=>{
+  const u=`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(EMAIL)}&su=${encodeURIComponent(subject())}&body=${encodeURIComponent(plainText())}`;
+  window.open(u,'_blank','noopener');
+});
+$('mailto').addEventListener('click',()=>{
+  location.href=`mailto:${EMAIL}?subject=${encodeURIComponent(subject())}&body=${encodeURIComponent(plainText())}`;
+});
+$('copy').addEventListener('click',async()=>{
+  const txt=plainText(),btn=$('copy');
+  try{await navigator.clipboard.writeText(txt)}
+  catch(e){const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove()}
+  btn.textContent='✓ Nokopēts';setTimeout(()=>btn.textContent='Kopēt rezultātu',2000);
+});
+
+$('submit').addEventListener('click',submit);
+$('again').addEventListener('click',()=>{build();window.scrollTo({top:0,behavior:'smooth'})});
+['name','cls'].forEach(id=>$(id).addEventListener('input',e=>e.target.classList.remove('miss')));
+build();
+}
+</script>
+</body>
+</html>
